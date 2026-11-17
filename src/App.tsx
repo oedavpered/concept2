@@ -27,9 +27,17 @@ const icons = {
   homeOff: `${A}/93cec.svg`,
   menuOn: `${A}/cf2ce.svg`,
   bigfestMenuBanner: `${A}/bigfest-menu-banner.png`,
+  bigfestCarouselBackground: `${A}/bigfest-carousel-bg.png`,
+  bigfestCarouselLogoDots: `${A}/bigfest-carousel-logo-bg.svg`,
+  bigfestCarouselLogo: `${A}/bigfest-carousel-logo.svg`,
 }
 
-const banners = [`${A}/be510.png`, `${A}/54062.png`, `${A}/b6e66.png`]
+const banners = [
+  icons.bigfestCarouselBackground,
+  `${A}/be510.png`,
+  `${A}/54062.png`,
+  `${A}/b6e66.png`,
+]
 const products = {
   roll: `${A}/c7596.png`,
   salad: `${A}/9e119.png`,
@@ -138,6 +146,7 @@ const preloadSources = Array.from(
       "d6794.png",
       "29db4.png",
       "bd5fb.png",
+      "loyalty-qr.png",
       "6fa8a.png",
       "8b2f9.png",
       "c6eda.svg",
@@ -153,6 +162,7 @@ const preloadSources = Array.from(
       "efe4d.svg",
       "aa8b6.svg",
       "59108.svg",
+      "menu-search.svg",
     ].map((file) => `${A}/${file}`),
   ]),
 )
@@ -174,6 +184,7 @@ function NavItem({
 }) {
   return (
     <button
+      aria-label={label}
       className={`flex min-w-0 items-center justify-center transition-colors ${
         active
           ? "h-12 flex-none flex-row gap-2 rounded-full bg-[#264f36] px-5 font-semibold text-white"
@@ -248,7 +259,7 @@ function HomeScreen({ addOffer }: { addOffer: (id: string) => void }) {
   }, [])
 
   return (
-    <section className="h-dvh flex-none overflow-y-auto px-4 pb-[92px] pt-4">
+    <section className="min-h-dvh px-4 pb-[92px] pt-4">
       <header className="sticky top-0 z-40 flex h-14 gap-2 bg-white before:absolute before:-left-4 before:-right-4 before:-top-4 before:h-4 before:bg-white before:content-['']">
         <button
           aria-label="Открыть QR-код"
@@ -284,7 +295,7 @@ function HomeScreen({ addOffer }: { addOffer: (id: string) => void }) {
               src={banner}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent from-[55%] via-black/30 via-[72%] to-black/60" />
-            {index === 0 && (
+            {index === 1 && (
               <div className="absolute bottom-4 left-4 right-4 text-white">
                 <p className="text-[16px] leading-5">
                   Попробуй новкинки этой зимы
@@ -409,6 +420,79 @@ function HomeScreen({ addOffer }: { addOffer: (id: string) => void }) {
   )
 }
 
+function QrBottomSheet({ onClose }: { onClose: () => void }) {
+  const panelRef = useRef<HTMLElement>(null)
+  const swipeStartY = useRef<number | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [])
+
+  return createPortal(
+    <div className="sheet-overlay fixed inset-0 z-[170] flex items-end justify-center bg-black/40">
+      <button
+        aria-label="Закрыть QR-код"
+        className="absolute inset-0"
+        onClick={onClose}
+        type="button"
+      />
+      <section
+        aria-label="Твой QR-код"
+        aria-modal="true"
+        className="sheet-panel relative flex h-[480px] w-full flex-col items-center rounded-t-[24px] bg-white px-4 pt-2"
+        onTouchEnd={() => {
+          if (swipeStartY.current === null) return
+          swipeStartY.current = null
+          if (dragOffset > 100) onClose()
+          else setDragOffset(0)
+        }}
+        onTouchMove={(event) => {
+          if (swipeStartY.current === null) return
+          setDragOffset(
+            Math.max(0, event.touches[0].clientY - swipeStartY.current),
+          )
+        }}
+        onTouchStart={(event) => {
+          const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
+          const touchY = event.touches[0].clientY
+          if (touchY - panelTop <= 40) swipeStartY.current = touchY
+        }}
+        ref={panelRef}
+        role="dialog"
+        style={
+          dragOffset > 0
+            ? { transform: `translateY(${dragOffset}px)`, transition: "none" }
+            : undefined
+        }
+      >
+        <div className="flex w-full flex-col items-center gap-4">
+          <span className="h-[5px] w-[50px] rounded-full bg-[#292929]/10" />
+          <div className="flex w-full flex-col items-center gap-2 text-center">
+            <h2 className="text-[24px] font-semibold leading-7">Твой QR-код</h2>
+            <p className="max-w-[359px] text-[16px] leading-5 text-[#606060]">
+              Отсканируйте QR-код на киоске самообслуживания перед
+              оплатой, чтобы получить бонусы за заказ.
+            </p>
+          </div>
+          <div className="flex h-[285px] w-[285px] items-center justify-center rounded-[40px] bg-[#f9f9f9] p-7">
+            <img
+              alt="QR-код для начисления бонусов"
+              className="h-[229px] w-[229px] object-contain mix-blend-multiply"
+              src={`${A}/loyalty-qr.png`}
+            />
+          </div>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  )
+}
+
 function OfferBottomSheet({
   title,
   price,
@@ -427,6 +511,7 @@ function OfferBottomSheet({
   const panelRef = useRef<HTMLElement>(null)
   const swipeStartY = useRef<number | null>(null)
   const [dragOffset, setDragOffset] = useState(0)
+  const [mobileOrder, setMobileOrder] = useState(false)
 
   return createPortal(
     <div className="sheet-overlay fixed inset-0 z-[110] flex items-end justify-center bg-black/40">
@@ -546,16 +631,35 @@ function OfferBottomSheet({
         </div>
 
         <div className="absolute inset-x-0 bottom-0 bg-white px-4 pb-4 pt-3">
-          <button
-            className="h-13 w-full rounded-full bg-[#ee7203] px-4 text-[16px] leading-5 text-white"
-            onClick={() => {
-              onAdd()
-              onClose()
-            }}
-            type="button"
-          >
-            Добавить
-          </button>
+          {mobileOrder ? (
+            <button
+              className="h-13 w-full rounded-full bg-[#ee7203] px-4 text-[16px] leading-5 text-white"
+              onClick={() => {
+                onAdd()
+                onClose()
+              }}
+              type="button"
+            >
+              Добавить
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                className="flex h-12 shrink-0 items-center justify-center gap-0.5 rounded-full bg-[#ee7203] px-4 text-[16px] leading-5 text-white"
+                type="button"
+              >
+                <img alt="" src={`${A}/offer-use-qr.svg`} />
+                <span>Воспользоваться</span>
+              </button>
+              <button
+                className="h-12 min-w-0 flex-1 rounded-full bg-[#e9e9e9] px-4 text-[16px] leading-5 text-[#292929]"
+                onClick={() => setMobileOrder(true)}
+                type="button"
+              >
+                Мобильный заказ
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </div>,
@@ -643,13 +747,20 @@ function OfferCard({
   )
 }
 
-function OffersScreen({ addOffer }: { addOffer: (id: string) => void }) {
+function OffersScreen({
+  addOffer,
+  onOpenQr,
+}: {
+  addOffer: (id: string) => void
+  onOpenQr: () => void
+}) {
   return (
-    <section className="h-dvh flex-none overflow-y-auto px-4 pb-[92px] pt-4">
+    <section className="min-h-dvh px-4 pb-[92px] pt-4">
       <header className="sticky top-0 z-40 flex h-14 gap-2 bg-white before:absolute before:-left-4 before:-right-4 before:-top-4 before:h-4 before:bg-white before:content-['']">
         <button
           aria-label="Открыть QR-код"
           className="flex w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f9f9f9]"
+          onClick={onOpenQr}
           type="button"
         >
           <img alt="" className="h-12 w-12" src={icons.qr} />
@@ -677,7 +788,56 @@ function OffersScreen({ addOffer }: { addOffer: (id: string) => void }) {
         </button>
       </div>
 
-      <h1 className="mb-2 mt-2 text-[24px] font-semibold leading-7">Акции</h1>
+      <section className="relative mt-3 h-[244px] overflow-hidden rounded-2xl bg-[#bee5fa]">
+        <div className="absolute left-4 top-4 h-[49px] w-[178px]">
+          <img
+            alt=""
+            className="absolute inset-0 h-full w-full"
+            src={icons.bigfestLogo}
+          />
+          <img
+            alt="БИГФЕСТ"
+            className="absolute inset-x-[9%] bottom-[14%] top-[20%] h-auto w-[83%]"
+            src={icons.bigfestWordmark}
+          />
+        </div>
+        <button
+          className="absolute right-4 top-[26px] rounded-2xl bg-white/40 px-3 py-2 text-[12px] leading-[14px]"
+          type="button"
+        >
+          Как участвовать?
+        </button>
+        <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-2">
+          <button className="relative h-[152px] text-left" type="button">
+            <img alt="" className="absolute left-0 top-0 h-[95px] w-full" src={icons.dayCard} />
+            <span className="absolute left-4 top-2 z-10 text-[10px] leading-[14px] text-[#ee7203]">
+              Акция дня
+            </span>
+            <img alt="" className="absolute left-[22px] top-0 z-10 h-[94px] w-[94px] object-contain" src={icons.chicken} />
+            <span className="absolute right-[18px] top-[25px] z-20 text-[16px] font-semibold">
+              135<small className="text-[10px]">₽</small>
+            </span>
+            <img alt="" className="absolute bottom-0 left-0 h-[57px] w-full" src={icons.dayFooter} />
+            <span className="absolute bottom-3 left-4 z-10 w-[105px] text-[12px] leading-[14px]">
+              Успей получить до 23:59
+            </span>
+            <img alt="" className="absolute bottom-4 right-4 z-10 h-6 w-3" src={icons.arrow} />
+          </button>
+          <button className="relative h-[152px] text-left" type="button">
+            <img alt="" className="absolute left-0 top-0 h-[95px] w-full" src={icons.secretCard} />
+            <span className="absolute left-4 top-[20px] z-10 text-[24px] font-semibold leading-7">
+              Сюрприз<br />дня
+            </span>
+            <img alt="" className="absolute bottom-0 left-0 h-[57px] w-full" src={icons.secretFooter} />
+            <span className="absolute bottom-3 left-4 z-10 w-[105px] text-[12px] leading-[14px]">
+              Успей получить до 23:59
+            </span>
+            <img alt="" className="absolute bottom-4 right-4 z-10 h-6 w-3" src={icons.arrow} />
+          </button>
+        </div>
+      </section>
+
+      <h1 className="mb-2 mt-4 text-[24px] font-semibold leading-7">Акции</h1>
       <div className="flex flex-col gap-2">
         <OfferCard
           id="offer-nuggets"
@@ -880,6 +1040,297 @@ function CatalogCard({
   )
 }
 
+function SearchProductCard({
+  item,
+  count,
+  changeQuantity,
+  openProduct,
+}: {
+  item: CatalogItem
+  count: number
+  changeQuantity: (id: string, delta: number) => void
+  openProduct: (item: CatalogItem) => void
+}) {
+  const [id, title, price, image] = item
+
+  return (
+    <article
+      className="flex h-[252px] min-w-0 cursor-pointer flex-col items-center justify-between rounded-2xl bg-[#f9f9f9] px-[14px] pb-[14px]"
+      onClick={() => openProduct(item)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") openProduct(item)
+      }}
+      role="button"
+      tabIndex={0}
+    >
+      <div className="flex w-full flex-col items-center">
+        <div className="relative h-[138px] w-[138px] overflow-hidden">
+          <img
+            alt=""
+            className="absolute inset-0 h-full w-full object-contain"
+            src={`${A}/${image}`}
+          />
+        </div>
+        <p className="min-h-10 text-center text-[16px] leading-5">{title}</p>
+      </div>
+      {count > 0 ? (
+        <div className="flex w-full items-center justify-between gap-2">
+          <strong className="whitespace-nowrap text-[16px] leading-5">
+            {Number(price.replace(/\D/g, "")) * count} ₽
+          </strong>
+          <div className="flex items-center gap-2">
+            <button
+              aria-label={`Уменьшить количество: ${title}`}
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#e9e9e9]"
+              onClick={(event) => {
+                event.stopPropagation()
+                changeQuantity(id, -1)
+              }}
+              type="button"
+            >
+              <img alt="" src={icons.minus} />
+            </button>
+            <strong className="min-w-3 text-center text-[16px] leading-5">
+              {count}
+            </strong>
+            <button
+              aria-label={`Увеличить количество: ${title}`}
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#e9e9e9]"
+              onClick={(event) => {
+                event.stopPropagation()
+                openProduct(item)
+              }}
+              type="button"
+            >
+              <img alt="" src={icons.plus} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex w-full items-center justify-between">
+          <strong className="text-[16px] leading-5">{price}</strong>
+          <button
+            aria-label={`Добавить в корзину: ${title}`}
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#ee7203]"
+            onClick={(event) => {
+              event.stopPropagation()
+              openProduct(item)
+            }}
+            type="button"
+          >
+            <img alt="" src={icons.plusWhite} />
+          </button>
+        </div>
+      )}
+    </article>
+  )
+}
+
+function SearchBottomSheet({
+  cart,
+  changeQuantity,
+  onClose,
+}: {
+  cart: Record<string, number>
+  changeQuantity: (id: string, delta: number) => void
+  onClose: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+  const swipeStartY = useRef<number | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [query, setQuery] = useState("")
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<CatalogItem | null>(
+    null,
+  )
+  const [productQuantity, setProductQuantity] = useState(1)
+  const normalizedQuery = query.trim().toLocaleLowerCase("ru")
+  const hasSearchIntent = !!normalizedQuery || activeCategory !== null
+  const categories = [
+    ["all", "Все"],
+    ...catalogSections.map(({ id, title }) => [id, title] as const),
+  ] as const
+  const searchableItems = catalogSections.flatMap((section) =>
+    section.items.map((item) => ({ item, sectionId: section.id })),
+  )
+  const results = searchableItems.filter(({ item, sectionId }) => {
+    const matchesCategory =
+      !!normalizedQuery ||
+      activeCategory === "all" ||
+      activeCategory === sectionId
+    const matchesQuery =
+      !normalizedQuery ||
+      item[1].toLocaleLowerCase("ru").includes(normalizedQuery)
+    return matchesCategory && matchesQuery
+  })
+  const suggestions = normalizedQuery
+    ? searchableItems
+        .filter(({ item }) =>
+          item[1].toLocaleLowerCase("ru").includes(normalizedQuery),
+        )
+        .slice(0, 5)
+        .map(({ item }) => item[1])
+    : []
+
+  const openProduct = (item: CatalogItem) => {
+    setSelectedProduct(item)
+    setProductQuantity(Math.max(1, cart[item[0]] ?? 1))
+  }
+
+  const addProduct = () => {
+    if (!selectedProduct) return
+    const id = selectedProduct[0]
+    changeQuantity(id, productQuantity - (cart[id] ?? 0))
+    setSelectedProduct(null)
+  }
+
+  return createPortal(
+    <div className="sheet-overlay fixed inset-0 z-[140] flex items-end justify-center bg-black/40">
+      <button
+        aria-label="Закрыть поиск"
+        className="absolute inset-0"
+        onClick={onClose}
+        type="button"
+      />
+      <section
+        aria-label="Поиск по меню"
+        aria-modal="true"
+        className="sheet-panel relative flex h-[calc(100dvh-44px)] w-full flex-col overflow-hidden rounded-t-[24px] bg-white"
+        onTouchEnd={() => {
+          if (swipeStartY.current === null) return
+          swipeStartY.current = null
+          if (dragOffset > 100) onClose()
+          else setDragOffset(0)
+        }}
+        onTouchMove={(event) => {
+          if (swipeStartY.current === null) return
+          setDragOffset(
+            Math.max(0, event.touches[0].clientY - swipeStartY.current),
+          )
+        }}
+        onTouchStart={(event) => {
+          const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
+          const touchY = event.touches[0].clientY
+          if (touchY - panelTop <= 34) swipeStartY.current = touchY
+        }}
+        ref={panelRef}
+        role="dialog"
+        style={
+          dragOffset > 0
+            ? { transform: `translateY(${dragOffset}px)`, transition: "none" }
+            : undefined
+        }
+      >
+        <div className="flex shrink-0 justify-center pb-3 pt-2">
+          <span className="h-[5px] w-[50px] rounded-full bg-[#292929]/10" />
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col px-4">
+          <label className="flex h-14 shrink-0 items-center gap-2 rounded-2xl bg-[#f9f9f9] px-4">
+            <img alt="" className="h-5 w-5 shrink-0" src={`${A}/030fe.svg`} />
+            <input
+              aria-label="Найти продукт"
+              autoComplete="off"
+              className="min-w-0 flex-1 bg-transparent text-[16px] leading-5 outline-none placeholder:text-[#adadad]"
+              enterKeyHint="search"
+              inputMode="search"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Поиск"
+              ref={inputRef}
+              type="search"
+              value={query}
+            />
+            {query && (
+              <button
+                aria-label="Очистить поиск"
+                className="flex h-8 w-8 items-center justify-center"
+                onClick={() => {
+                  setQuery("")
+                  inputRef.current?.focus()
+                }}
+                type="button"
+              >
+                <img alt="" className="h-6 w-6" src={`${A}/aba64.svg`} />
+              </button>
+            )}
+          </label>
+
+          {!normalizedQuery ? (
+            <div className="mt-3 flex shrink-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {categories.map(([id, title]) => (
+                <button
+                  className={`h-8 shrink-0 rounded-full px-3 text-[14px] leading-4 ${
+                    activeCategory === id
+                      ? "bg-[#ee7203] text-white"
+                      : "bg-[#f4f4f4] text-[#292929]"
+                  }`}
+                  key={id}
+                  onClick={() => setActiveCategory(id)}
+                  type="button"
+                >
+                  {title}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 flex shrink-0 flex-wrap gap-2">
+              {suggestions.map((suggestion) => (
+                <button
+                  className="h-8 rounded-full bg-[#f4f4f4] px-3 text-[14px] leading-4"
+                  key={suggestion}
+                  onClick={() => {
+                    setQuery(suggestion)
+                    inputRef.current?.focus()
+                  }}
+                  type="button"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto pb-[max(24px,env(safe-area-inset-bottom))]">
+            {!hasSearchIntent ? null : results.length ? (
+              <div className="grid grid-cols-2 gap-2">
+                {results.map(({ item }) => (
+                  <SearchProductCard
+                    changeQuantity={changeQuantity}
+                    count={cart[item[0]] ?? 0}
+                    item={item}
+                    key={item[0]}
+                    openProduct={openProduct}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex min-h-48 flex-col items-center justify-center px-6 text-center">
+                <h2 className="text-[18px] font-semibold leading-6">
+                  Ничего не нашли
+                </h2>
+                <p className="mt-2 text-[14px] leading-5 text-[#adadad]">
+                  Проверьте название или выберите другую категорию
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        {selectedProduct && (
+          <ProductBottomSheet
+            item={selectedProduct}
+            onAdd={addProduct}
+            onClose={() => setSelectedProduct(null)}
+            quantity={productQuantity}
+            setQuantity={setProductQuantity}
+          />
+        )}
+      </section>
+    </div>,
+    document.body,
+  )
+}
+
 function ProductBottomSheet({
   item,
   quantity,
@@ -925,7 +1376,7 @@ function ProductBottomSheet({
           : `${title} приготовлен из отборных ингредиентов и подаётся специально для сытного перекуса.`
 
   return createPortal(
-    <div className="sheet-overlay fixed inset-0 z-[100] flex items-end justify-center bg-black/40">
+    <div className="sheet-overlay fixed inset-0 z-[150] flex items-end justify-center bg-black/40">
       <button
         aria-label="Закрыть"
         className="absolute inset-0"
@@ -1250,11 +1701,16 @@ function CartBottomSheet({
 function MenuScreen({
   cart,
   changeQuantity,
+  onOpenOffers,
+  onOpenQr,
+  onOpenSearch,
 }: {
   cart: Record<string, number>
   changeQuantity: (id: string, delta: number) => void
+  onOpenOffers: () => void
+  onOpenQr: () => void
+  onOpenSearch: () => void
 }) {
-  const scrollRef = useRef<HTMLElement>(null)
   const heroRef = useRef<HTMLDivElement>(null)
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const [activeSection, setActiveSection] = useState("combo")
@@ -1290,9 +1746,6 @@ function MenuScreen({
   }
 
   useEffect(() => {
-    const root = scrollRef.current
-    if (!root) return
-
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -1300,7 +1753,7 @@ function MenuScreen({
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
         if (visible[0]) setActiveSection(visible[0].target.id)
       },
-      { root, rootMargin: "-105px 0px -72% 0px", threshold: 0 },
+      { root: null, rootMargin: "-105px 0px -72% 0px", threshold: 0 },
     )
 
     catalogSections.forEach(({ id }) => {
@@ -1308,6 +1761,13 @@ function MenuScreen({
       if (section) observer.observe(section)
     })
     return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const updatePinnedState = () => setFiltersPinned(window.scrollY >= 280)
+    updatePinnedState()
+    window.addEventListener("scroll", updatePinnedState, { passive: true })
+    return () => window.removeEventListener("scroll", updatePinnedState)
   }, [])
 
   useEffect(() => {
@@ -1322,13 +1782,7 @@ function MenuScreen({
   }, [activeSection])
 
   return (
-    <section
-      className="h-dvh flex-none overflow-y-auto pb-[92px] pt-[env(safe-area-inset-top)]"
-      onScroll={(event) => {
-        setFiltersPinned(event.currentTarget.scrollTop >= 280)
-      }}
-      ref={scrollRef}
-    >
+    <section className="min-h-dvh pb-[92px] pt-[env(safe-area-inset-top)]">
       {filtersPinned &&
         createPortal(
           <div
@@ -1338,22 +1792,31 @@ function MenuScreen({
           document.body,
         )}
       <header
-        className={`sticky top-[calc(env(safe-area-inset-top)+16px)] z-[95] flex h-14 px-3 transition-[background-color,box-shadow] duration-200 ${
+        className={`sticky top-[calc(env(safe-area-inset-top)+16px)] z-[95] flex h-14 gap-2 px-4 transition-[background-color,box-shadow] duration-200 ${
           filtersPinned
             ? "bg-transparent"
             : "bg-transparent"
         }`}
       >
         <button
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-[#f9f9f9] px-3 text-left"
+          aria-label="Открыть QR-код"
+          className="flex w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f9f9f9] p-1"
+          onClick={onOpenQr}
           type="button"
         >
-          <img alt="QR-код" className="h-8 w-8 shrink-0" src={icons.qr} />
-          <span className="min-w-0 flex-1 text-[13px] leading-[15px]">
+          <img alt="" className="h-12 w-12" src={icons.qr} />
+        </button>
+        <button
+          className="flex min-w-0 flex-1 items-center rounded-2xl bg-[#f9f9f9] py-3 pl-4 pr-3 text-left"
+          type="button"
+        >
+          <span className="min-w-0 flex-1 text-[14px] leading-4">
             <strong className="block font-semibold">В предприятии</strong>
-            <span className="block truncate">ул. Новодмитровская, 77с2</span>
+            <span className="block truncate">
+              ул. Новодмитровская, 77с2
+            </span>
           </span>
-          <img alt="" className="h-5 w-[10px] shrink-0" src={icons.chevron} />
+          <img alt="" className="h-6 w-6 shrink-0" src={icons.chevron} />
         </button>
         {filtersPinned && (
           <>
@@ -1372,14 +1835,83 @@ function MenuScreen({
         className="-mt-[calc(3.5rem+env(safe-area-inset-top))] flex h-[calc(422px+env(safe-area-inset-top))] snap-x overflow-x-auto bg-[#bee5fa] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         ref={heroRef}
       >
-        {banners.map((banner) => (
-          <article className="relative h-full w-full shrink-0 snap-start overflow-hidden" key={banner}>
-            <img alt="" className="absolute inset-0 h-full w-full object-cover" src={banner} />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/55" />
-            <div className="absolute bottom-24 left-4 right-24 text-white">
-              <p className="text-[16px] leading-5">Попробуй новинки этой зимы</p>
-              <h2 className="mt-1 text-[24px] font-semibold leading-7">Закажи у нас в точке или доставку!</h2>
-            </div>
+        {banners.map((banner, index) => (
+          <article
+            aria-label={index === 0 ? "Открыть акции Бигфеста" : undefined}
+            className={`relative h-full w-full shrink-0 snap-start overflow-hidden ${
+              index === 0 ? "cursor-pointer bg-[#bee5fa]" : ""
+            }`}
+            key={banner}
+            onClick={index === 0 ? onOpenOffers : undefined}
+            onKeyDown={
+              index === 0
+                ? (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      onOpenOffers()
+                    }
+                  }
+                : undefined
+            }
+            role={index === 0 ? "button" : undefined}
+            tabIndex={index === 0 ? 0 : undefined}
+          >
+            {index === 0 ? (
+              <div className="absolute inset-0 flex justify-center bg-[#bee5fa]">
+                <img
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  src={banner}
+                />
+                <div className="relative h-full w-full max-w-[390px]">
+                  <div className="absolute left-4 right-4 top-[130px] h-[99px]">
+                    <img
+                      alt=""
+                      className="absolute inset-0 h-full w-full"
+                      src={icons.bigfestCarouselLogoDots}
+                    />
+                    <img
+                      alt="БИГФЕСТ"
+                      className="absolute left-[9.45%] top-[20.53%] h-[65.18%] w-[82.26%]"
+                      src={icons.bigfestCarouselLogo}
+                    />
+                  </div>
+                  <p className="absolute left-6 top-[259px] whitespace-nowrap text-[24px] font-semibold leading-7 text-[#292929]">
+                    Теперь еще больше выгоды!
+                  </p>
+                  <span className="absolute left-4 top-[294px] rounded-full bg-white px-3 py-2 text-[14px] leading-4 text-[#292929]">
+                    За выгодой
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-1/2 top-[332px] flex -translate-x-1/2 gap-0.5"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-white/55" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-white/55" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-white/55" />
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <img
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                src={banner}
+              />
+            )}
+            {index !== 0 && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/55" />
+                <div className="absolute bottom-24 left-4 right-24 text-white">
+                  <p className="text-[16px] leading-5">
+                    Попробуй новинки этой зимы
+                  </p>
+                  <h2 className="mt-1 text-[24px] font-semibold leading-7">
+                    Закажи у нас в точке или доставку!
+                  </h2>
+                </div>
+              </>
+            )}
           </article>
         ))}
       </div>
@@ -1394,6 +1926,17 @@ function MenuScreen({
         }`}
       >
         <div className="flex gap-[6px] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button
+            aria-label="Поиск"
+            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f4f4f4] p-[3px]"
+            onClick={(event) => {
+              event.currentTarget.blur()
+              onOpenSearch()
+            }}
+            type="button"
+          >
+            <img alt="" src={`${A}/menu-search.svg`} />
+          </button>
           {catalogSections.map(({ id, title }) => (
             <button
               className={`h-8 shrink-0 rounded-full px-3 text-[12px] font-medium leading-4 ${
@@ -1429,11 +1972,18 @@ function MenuScreen({
         </div>
       </div>
       {!filtersPinned && (
-        <img
-          alt="Участвуй в Бигфесте — выигрывай призы"
-          className="mx-4 mt-1 block h-auto w-[calc(100%-2rem)] rounded-2xl"
-          src={icons.bigfestMenuBanner}
-        />
+        <button
+          aria-label="Открыть акции Бигфеста"
+          className="mx-4 mt-1 block w-[calc(100%-2rem)] overflow-hidden rounded-2xl"
+          onClick={onOpenOffers}
+          type="button"
+        >
+          <img
+            alt="Участвуй в Бигфесте — выигрывай призы"
+            className="block h-auto w-full"
+            src={icons.bigfestMenuBanner}
+          />
+        </button>
       )}
       {catalogSections.map(({ id, title, items }) => (
         <section className="scroll-mt-12 px-4 pt-3" id={id} key={id}>
@@ -1469,6 +2019,8 @@ export default function App() {
   const [screen, setScreen] = useState<"home" | "offers" | "menu">("menu")
   const [cart, setCart] = useState<Record<string, number>>({})
   const [cartOpen, setCartOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [qrOpen, setQrOpen] = useState(false)
   const [loadProgress, setLoadProgress] = useState(0)
   const [isReady, setIsReady] = useState(false)
   const cartCount = Object.values(cart).reduce(
@@ -1490,6 +2042,10 @@ export default function App() {
   useEffect(() => {
     if (cartCount === 0) setCartOpen(false)
   }, [cartCount])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" })
+  }, [screen])
 
   useEffect(() => {
     let active = true
@@ -1535,14 +2091,22 @@ export default function App() {
           <HomeScreen addOffer={(id) => changeQuantity(id, 1)} />
         )}
         {screen === "offers" && (
-          <OffersScreen addOffer={(id) => changeQuantity(id, 1)} />
+          <OffersScreen
+            addOffer={(id) => changeQuantity(id, 1)}
+            onOpenQr={() => setQrOpen(true)}
+          />
         )}
         {screen === "menu" && (
           <MenuScreen
             cart={cart}
             changeQuantity={changeQuantity}
+            onOpenOffers={() => setScreen("offers")}
+            onOpenQr={() => setQrOpen(true)}
+            onOpenSearch={() => setSearchOpen(true)}
           />
         )}
+
+        {qrOpen && <QrBottomSheet onClose={() => setQrOpen(false)} />}
 
         {cartCount > 0 && (
           <div className="pointer-events-none fixed inset-x-0 bottom-[86px] z-50 flex w-full justify-end px-4 py-[3px]">
@@ -1555,26 +2119,6 @@ export default function App() {
               <span className="font-['Tasty_Gothic'] text-[18px]">
                 {cartTotal} ₽
               </span>
-            </button>
-          </div>
-        )}
-
-        {screen === "menu" && (
-          <div className="pointer-events-none fixed bottom-[86px] left-4 z-50 py-[3px]">
-            <button
-              className="pointer-events-auto flex h-12 items-center gap-2 rounded-full bg-white px-5 text-[16px] leading-5 text-[#292929] shadow-[0_2px_12px_rgba(0,0,0,.14)]"
-              type="button"
-            >
-              <svg
-                aria-hidden="true"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="10.5" cy="10.5" r="7" stroke="currentColor" strokeWidth="2" />
-                <path d="m16 16 5 5" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
-              </svg>
-              <span>Поиск</span>
             </button>
           </div>
         )}
@@ -1601,6 +2145,13 @@ export default function App() {
             changeQuantity={changeQuantity}
             onClose={() => setCartOpen(false)}
             total={cartTotal}
+          />
+        )}
+        {searchOpen && (
+          <SearchBottomSheet
+            cart={cart}
+            changeQuantity={changeQuantity}
+            onClose={() => setSearchOpen(false)}
           />
         )}
       </div>
