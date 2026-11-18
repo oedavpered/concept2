@@ -479,11 +479,12 @@ function QrBottomSheet({ onClose }: { onClose: () => void }) {
         onTouchEnd={() => {
           if (swipeStartY.current === null) return
           swipeStartY.current = null
-          if (dragOffset > 100) onClose()
+          if (dragOffset > 72) onClose()
           else setDragOffset(0)
         }}
         onTouchMove={(event) => {
           if (swipeStartY.current === null) return
+          event.preventDefault()
           setDragOffset(
             Math.max(0, event.touches[0].clientY - swipeStartY.current),
           )
@@ -491,7 +492,7 @@ function QrBottomSheet({ onClose }: { onClose: () => void }) {
         onTouchStart={(event) => {
           const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
           const touchY = event.touches[0].clientY
-          if (touchY - panelTop <= 40) swipeStartY.current = touchY
+          if (touchY - panelTop <= 64) swipeStartY.current = touchY
         }}
         ref={panelRef}
         role="dialog"
@@ -558,11 +559,12 @@ function OfferBottomSheet({
         onTouchEnd={() => {
           if (swipeStartY.current === null) return
           swipeStartY.current = null
-          if (dragOffset > 100) onClose()
+          if (dragOffset > 72) onClose()
           else setDragOffset(0)
         }}
         onTouchMove={(event) => {
           if (swipeStartY.current === null) return
+          event.preventDefault()
           setDragOffset(
             Math.max(0, event.touches[0].clientY - swipeStartY.current),
           )
@@ -1223,11 +1225,12 @@ function SearchBottomSheet({
         onTouchEnd={() => {
           if (swipeStartY.current === null) return
           swipeStartY.current = null
-          if (dragOffset > 100) onClose()
+          if (dragOffset > 72) onClose()
           else setDragOffset(0)
         }}
         onTouchMove={(event) => {
           if (swipeStartY.current === null) return
+          event.preventDefault()
           setDragOffset(
             Math.max(0, event.touches[0].clientY - swipeStartY.current),
           )
@@ -1235,7 +1238,7 @@ function SearchBottomSheet({
         onTouchStart={(event) => {
           const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
           const touchY = event.touches[0].clientY
-          if (touchY - panelTop <= 34) swipeStartY.current = touchY
+          if (touchY - panelTop <= 64) swipeStartY.current = touchY
         }}
         ref={panelRef}
         role="dialog"
@@ -1414,11 +1417,12 @@ function ProductBottomSheet({
         onTouchEnd={() => {
           if (swipeStartY.current === null) return
           swipeStartY.current = null
-          if (dragOffset > 100) onClose()
+          if (dragOffset > 72) onClose()
           else setDragOffset(0)
         }}
         onTouchMove={(event) => {
           if (swipeStartY.current === null) return
+          event.preventDefault()
           setDragOffset(
             Math.max(0, event.touches[0].clientY - swipeStartY.current),
           )
@@ -1574,11 +1578,12 @@ function CartBottomSheet({
         onTouchEnd={() => {
           if (swipeStartY.current === null) return
           swipeStartY.current = null
-          if (dragOffset > 100) onClose()
+          if (dragOffset > 72) onClose()
           else setDragOffset(0)
         }}
         onTouchMove={(event) => {
           if (swipeStartY.current === null) return
+          event.preventDefault()
           setDragOffset(
             Math.max(0, event.touches[0].clientY - swipeStartY.current),
           )
