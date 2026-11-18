@@ -762,7 +762,7 @@ function OfferCard({
         <div className="flex min-w-0 flex-1 justify-between">
           <div className="flex min-w-0 flex-1 flex-col justify-between py-4 pl-4">
             <div>
-              <h2 className="max-w-[180px] text-[17px] font-bold leading-5">
+              <h2 className="max-w-[180px] text-[17px] font-semibold leading-5">
                 {title}
               </h2>
               <p className="mt-1 text-[13px] leading-4">Ждем тебя!</p>
@@ -2006,7 +2006,7 @@ function MenuScreen({
           </button>
           {catalogSections.map(({ id, title }) => (
             <button
-              className={`h-8 shrink-0 rounded-full px-3 text-[12px] font-medium leading-4 ${
+              className={`h-8 shrink-0 rounded-full px-3 text-[12px] leading-4 ${
                 activeSection === id
                   ? "bg-[#ee7203] text-white"
                   : "bg-[#f4f4f4] text-[#292929]"
