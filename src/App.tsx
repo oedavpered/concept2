@@ -1729,6 +1729,7 @@ function MenuScreen({
 }) {
   const heroRef = useRef<HTMLDivElement>(null)
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const categoryScrollRef = useRef(false)
   const [activeSection, setActiveSection] = useState("combo")
   const [filtersPinned, setFiltersPinned] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<CatalogItem | null>(
@@ -1780,7 +1781,10 @@ function MenuScreen({
   }, [])
 
   useEffect(() => {
-    const updatePinnedState = () => setFiltersPinned(window.scrollY >= 280)
+    const updatePinnedState = () => {
+      if (categoryScrollRef.current) return
+      setFiltersPinned(window.scrollY >= 280)
+    }
     updatePinnedState()
     window.addEventListener("scroll", updatePinnedState, { passive: true })
     return () => window.removeEventListener("scroll", updatePinnedState)
@@ -1962,18 +1966,28 @@ function MenuScreen({
               }`}
               key={id}
               onClick={() => {
-                const container = scrollRef.current
-                const target = document.getElementById(id)
-                if (!container || !target) return
-
                 setActiveSection(id)
-                container.scrollTo({
-                  top:
-                    container.scrollTop +
-                    target.getBoundingClientRect().top -
-                    container.getBoundingClientRect().top -
-                    104,
-                  behavior: "smooth",
+                categoryScrollRef.current = true
+                setFiltersPinned(true)
+                window.requestAnimationFrame(() => {
+                  window.requestAnimationFrame(() => {
+                    const target = document.getElementById(id)
+                    if (!target) return
+
+                    window.scrollTo({
+                      top: Math.max(
+                        0,
+                        window.scrollY +
+                          target.getBoundingClientRect().top -
+                          116,
+                      ),
+                      behavior: "smooth",
+                    })
+                    window.setTimeout(() => {
+                      categoryScrollRef.current = false
+                      setFiltersPinned(window.scrollY >= 280)
+                    }, 900)
+                  })
                 })
               }}
               ref={(node) => {
