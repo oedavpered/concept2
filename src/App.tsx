@@ -492,7 +492,7 @@ function QrBottomSheet({ onClose }: { onClose: () => void }) {
         onTouchStart={(event) => {
           const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
           const touchY = event.touches[0].clientY
-          if (touchY - panelTop <= 128) swipeStartY.current = touchY
+          if (touchY - panelTop <= 256) swipeStartY.current = touchY
         }}
         ref={panelRef}
         role="dialog"
@@ -1238,7 +1238,7 @@ function SearchBottomSheet({
         onTouchStart={(event) => {
           const panelTop = panelRef.current?.getBoundingClientRect().top ?? 0
           const touchY = event.touches[0].clientY
-          if (touchY - panelTop <= 128) swipeStartY.current = touchY
+          if (touchY - panelTop <= 256) swipeStartY.current = touchY
         }}
         ref={panelRef}
         role="dialog"
