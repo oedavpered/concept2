@@ -903,14 +903,6 @@ function OffersScreen({
       <h1 className="mb-2 mt-4 text-[24px] font-semibold leading-7">Акции</h1>
       <div className="flex flex-col gap-2">
         <OfferCard
-          id="offer-nuggets"
-          image="ce98a.png"
-          napkin
-          onAddOffer={addOffer}
-          price="95"
-          title="Наггетсы (6 шт.) всего за 95 рублей"
-        />
-        <OfferCard
           id="offer-cherry-pie"
           image="d6794.png"
           napkin
@@ -924,6 +916,14 @@ function OffersScreen({
           onAddOffer={addOffer}
           price="80"
           title="Картофель Фри (мал.)"
+        />
+        <OfferCard
+          id="offer-nuggets"
+          image="ce98a.png"
+          napkin
+          onAddOffer={addOffer}
+          price="95"
+          title="Наггетсы (6 шт.) всего за 95 рублей"
         />
       </div>
     </section>
